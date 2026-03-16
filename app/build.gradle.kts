@@ -35,9 +35,19 @@ android {
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${envProperties.getProperty("GOOGLE_WEB_CLIENT_ID") ?: ""}\"")
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("release.keystore")
+            storePassword = "firegov123"
+            keyAlias = "firegov_release"
+            keyPassword = "firegov123"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

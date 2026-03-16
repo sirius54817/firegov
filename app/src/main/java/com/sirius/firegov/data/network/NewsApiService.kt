@@ -11,7 +11,8 @@ interface NewsApiService {
         @Query("q") query: String,
         @Query("language") language: String = "en",
         @Query("country") country: String? = null,
-        @Query("excludecountry") excludeCountry: String? = null
+        @Query("excludecountry") excludeCountry: String? = null,
+        @Query("page") page: String? = null
     ): NewsResponse
 
     companion object {

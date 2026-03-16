@@ -24,17 +24,17 @@ val LightSurface = Color(0xFFFFFFFF)
 val LightOnSurface = Color(0xFF09090B)
 
 // Dark Palette (Modern Zinc + Fire Accents)
-val DarkBackground = Color(0xFF09090B)
+val DarkBackground = Color(0xFF18181B) // Dark Gray (Zinc 900)
 val DarkForeground = Color(0xFFFAFAFA)
 val DarkPrimary = BrandRed
 val DarkPrimaryForeground = Color(0xFFFFFFFF)
-val DarkSecondary = Color(0xFF27272A)
+val DarkSecondary = Color(0xFF27272A) // Zinc 800
 val DarkSecondaryForeground = Color(0xFFFAFAFA)
 val DarkMuted = Color(0xFF27272A)
 val DarkMutedForeground = Color(0xFFA1A1AA)
 val DarkAccent = Color(0xFF27272A)
 val DarkAccentForeground = Color(0xFFFAFAFA)
-val DarkBorder = Color(0xFF27272A)
+val DarkBorder = Color(0xFF3F3F46) // Zinc 700
 val DarkInput = Color(0xFF27272A)
-val DarkSurface = Color(0xFF09090B)
+val DarkSurface = Color(0xFF18181B)
 val DarkOnSurface = Color(0xFFFAFAFA)

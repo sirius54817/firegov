@@ -14,7 +14,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sirius.firegov.ui.screens.history.HistoryScreen
 import com.sirius.firegov.ui.screens.news.NewsScreen
@@ -81,7 +83,10 @@ fun HomeScreenContent(
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            ) {
                 tabs.forEachIndexed { index, title ->
                     val isEnabled = isProfileComplete || index == 3
                     NavigationBarItem(
@@ -89,18 +94,30 @@ fun HomeScreenContent(
                             Icon(
                                 icons[index], 
                                 contentDescription = title,
-                                tint = if (isEnabled) LocalContentColor.current else LocalContentColor.current.copy(alpha = 0.3f)
+                                tint = if (isEnabled) {
+                                    if (selectedTab == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                }
                             ) 
                         },
                         label = { 
                             Text(
                                 title,
-                                color = if (isEnabled) LocalContentColor.current else LocalContentColor.current.copy(alpha = 0.3f)
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                                color = if (isEnabled) {
+                                    if (selectedTab == index) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                }
                             ) 
                         },
                         selected = selectedTab == index,
                         onClick = { if (isEnabled) onTabSelected(index) },
-                        enabled = isEnabled
+                        enabled = isEnabled,
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        )
                     )
                 }
             }

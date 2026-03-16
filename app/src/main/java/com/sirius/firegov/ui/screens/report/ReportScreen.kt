@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.google.android.gms.location.LocationServices
@@ -39,6 +41,7 @@ import com.google.firebase.firestore.GeoPoint
 import com.google.maps.android.compose.*
 import com.sirius.firegov.ui.theme.FiregovTheme
 import kotlinx.coroutines.delay
+import java.io.File
 
 @SuppressLint("MissingPermission")
 @Composable
@@ -56,6 +59,7 @@ fun ReportScreen(
     val state by viewModel.state.collectAsState()
 
     var showSuccessAnimation by remember { mutableStateOf(false) }
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -67,16 +71,32 @@ fun ReportScreen(
         }
     }
 
-    val photoLauncher = rememberLauncherForActivityResult(
+    val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { viewModel.addPhoto(it) }
     }
 
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            tempCameraUri?.let { viewModel.addPhoto(it) }
+        }
+    }
+
+    fun launchCamera() {
+        val file = File(context.cacheDir, "camera_image_${System.currentTimeMillis()}.jpg")
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        tempCameraUri = uri
+        cameraLauncher.launch(uri)
+    }
+
     LaunchedEffect(Unit) {
         locationPermissionLauncher.launch(arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.CAMERA
         ))
     }
 
@@ -102,7 +122,8 @@ fun ReportScreen(
                 }
             },
             onAddressChange = viewModel::setAddress,
-            onAddPhoto = { photoLauncher.launch("image/*") },
+            onAddCameraPhoto = { launchCamera() },
+            onAddGalleryPhoto = { galleryLauncher.launch("image/*") },
             onSubmit = viewModel::submitReport,
             modifier = Modifier.fillMaxSize()
         )
@@ -157,7 +178,8 @@ fun ReportScreenContent(
     state: ReportState,
     onLocationRequest: () -> Unit,
     onAddressChange: (String) -> Unit,
-    onAddPhoto: () -> Unit,
+    onAddCameraPhoto: () -> Unit,
+    onAddGalleryPhoto: () -> Unit,
     onSubmit: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -263,28 +285,47 @@ fun ReportScreenContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text("Evidence Photos (Max 3)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.Start) {
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             photos.forEach { uri ->
                 AsyncImage(
                     model = uri,
                     contentDescription = null,
                     modifier = Modifier
                         .size(90.dp)
-                        .padding(end = 12.dp)
                         .clip(RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Crop
                 )
             }
             if (photos.size < 3) {
+                // First Option: Camera
                 Surface(
-                    onClick = onAddPhoto,
+                    onClick = onAddCameraPhoto,
+                    modifier = Modifier.size(90.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.PhotoCamera, contentDescription = "Take Photo", tint = MaterialTheme.colorScheme.primary)
+                            Text("Camera", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+
+                // Second Option: Gallery
+                Surface(
+                    onClick = onAddGalleryPhoto,
                     modifier = Modifier.size(90.dp),
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.AddAPhoto, contentDescription = "Add Photo", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.AddAPhoto, contentDescription = "Add Photo", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Gallery", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
@@ -331,7 +372,8 @@ fun ReportScreenPreview() {
             state = ReportState.Idle,
             onLocationRequest = {},
             onAddressChange = {},
-            onAddPhoto = {},
+            onAddCameraPhoto = {},
+            onAddGalleryPhoto = {},
             onSubmit = {}
         )
     }

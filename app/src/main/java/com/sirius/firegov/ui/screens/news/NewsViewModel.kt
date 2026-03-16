@@ -24,15 +24,54 @@ class NewsViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
+    private var indiaNextPage: String? = null
+    private var worldNextPage: String? = null
+
     init {
-        fetchNews()
+        fetchInitialNews()
     }
 
-    fun fetchNews() {
+    private fun fetchInitialNews() {
         viewModelScope.launch {
             _isLoading.value = true
-            _indiaNews.value = newsRepository.getIndiaNews()
-            _worldNews.value = newsRepository.getWorldNews()
+            
+            val indiaResponse = newsRepository.getIndiaNews()
+            if (indiaResponse != null) {
+                _indiaNews.value = indiaResponse.results
+                indiaNextPage = indiaResponse.nextPage
+            }
+
+            val worldResponse = newsRepository.getWorldNews()
+            if (worldResponse != null) {
+                _worldNews.value = worldResponse.results
+                worldNextPage = worldResponse.nextPage
+            }
+            
+            _isLoading.value = false
+        }
+    }
+
+    fun loadMore(isIndia: Boolean) {
+        val nextPage = if (isIndia) indiaNextPage else worldNextPage
+        if (nextPage == null || _isLoading.value) return
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            val response = if (isIndia) {
+                newsRepository.getIndiaNews(nextPage)
+            } else {
+                newsRepository.getWorldNews(nextPage)
+            }
+
+            if (response != null) {
+                if (isIndia) {
+                    _indiaNews.value += response.results
+                    indiaNextPage = response.nextPage
+                } else {
+                    _worldNews.value += response.results
+                    worldNextPage = response.nextPage
+                }
+            }
             _isLoading.value = false
         }
     }

@@ -48,5 +48,6 @@ data class NewsArticle(
 
 data class NewsResponse(
     val status: String,
-    val results: List<NewsArticle>
+    val results: List<NewsArticle>,
+    val nextPage: String? = null
 )

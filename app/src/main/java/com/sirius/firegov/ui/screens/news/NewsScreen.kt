@@ -26,6 +26,8 @@ import coil.compose.AsyncImage
 import com.sirius.firegov.data.model.NewsArticle
 import com.sirius.firegov.ui.theme.FiregovTheme
 
+import androidx.compose.foundation.lazy.rememberLazyListState
+
 @Composable
 fun NewsScreen(
     modifier: Modifier = Modifier,
@@ -39,6 +41,7 @@ fun NewsScreen(
         indiaNews = indiaNews,
         worldNews = worldNews,
         isLoading = isLoading,
+        onLoadMore = viewModel::loadMore,
         modifier = modifier
     )
 }
@@ -48,10 +51,24 @@ fun NewsScreenContent(
     indiaNews: List<NewsArticle>,
     worldNews: List<NewsArticle>,
     isLoading: Boolean,
+    onLoadMore: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
+    val listState = rememberLazyListState()
+
+    val isIndia = selectedTab == 0
+    val newsList = if (isIndia) indiaNews else worldNews
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collect { lastIndex ->
+                if (lastIndex != null && lastIndex >= newsList.size - 2 && !isLoading) {
+                    onLoadMore(isIndia)
+                }
+            }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -87,25 +104,28 @@ fun NewsScreenContent(
             }
         }
 
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(newsList) { article ->
+                NewsCard(article = article) {
+                    val intent = CustomTabsIntent.Builder().build()
+                    intent.launchUrl(context, Uri.parse(article.link))
+                }
             }
-        } else {
-            val newsList = if (selectedTab == 0) indiaNews else worldNews
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(newsList) { article ->
-                    NewsCard(article = article) {
-                        val intent = CustomTabsIntent.Builder().build()
-                        intent.launchUrl(context, Uri.parse(article.link))
+            
+            if (isLoading) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(modifier = Modifier.size(32.dp))
                     }
                 }
-                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
+            
+            item { Spacer(modifier = Modifier.height(80.dp)) }
         }
     }
 }
